@@ -107,3 +107,6 @@ docker compose down -v
 docker compose up -d
 mvn spring-boot:run
 ```
+
+## Hour 2 - Key Concepts
+![img.png](img.png)
