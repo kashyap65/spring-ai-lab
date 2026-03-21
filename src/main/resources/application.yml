@@ -1,0 +1,91 @@
+spring:
+  application:
+    name: spring-ai-lab
+
+  # ── Database ─────────────────────────────────────────────────
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ailab
+    username: ailab
+    password: ailab123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # ── JPA / Hibernate ───────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate          # Flyway owns schema — Hibernate only validates
+    show-sql: false               # flip to true when debugging queries
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # ── Flyway — DB migrations ────────────────────────────────────
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  # ── Spring AI — OpenAI ────────────────────────────────────────
+  #
+  #   IMPORTANT: Never hardcode your API key here.
+  #   Set environment variable:  export OPENAI_API_KEY=sk-...
+  #   Or create .env file (see .env.example)
+  #
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:your-key-here}   # reads from env var
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.2          # low for data tasks — change per use case
+          max-tokens: 2048
+      embedding:
+        options:
+          model: text-embedding-3-small   # cheaper model, 1536 dims, great for RAG
+
+    # ── PGVector store — reuses same Postgres ──────────────────
+    vectorstore:
+      pgvector:
+        index-type: HNSW            # Hierarchical Navigable Small World — fast ANN
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536            # must match embedding model output dims
+        initialize-schema: true     # creates vector_store table on first run
+
+# ── Server ────────────────────────────────────────────────────
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# ── Actuator — health & metrics ───────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# ── Logging ───────────────────────────────────────────────────
+logging:
+  level:
+    com.ailab: DEBUG
+    org.springframework.ai: DEBUG    # shows prompt/response in console
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# ── App-level config (used in Hours 2-8) ──────────────────────
+ailab:
+  rag:
+    chunk-size: 500         # tokens per document chunk
+    chunk-overlap: 50       # overlap between chunks
+    top-k: 5                # how many similar docs to retrieve
+  chat:
+    max-history: 10         # max conversation turns to keep in memory
