@@ -110,3 +110,89 @@ mvn spring-boot:run
 
 ## Hour 2 - Key Concepts
 ![img.png](img.png)
+
+chatClient.prompt()
+
+    // ── WHO the model is ──────────────────────────
+    .system("You are a...")          // sets persona + rules
+
+    // ── WHAT to process ──────────────────────────
+    .user("The question or task")    // the user's input
+
+    // ── HOW to behave this call ───────────────────
+    .options(OpenAiChatOptions.builder()
+        .withTemperature(0.0f)       // override temperature for this call
+        .withMaxTokens(500)          // limit response length
+        .build())
+
+    // ── EXECUTE ───────────────────────────────────
+    .call()                          // makes the HTTP request
+
+    // ── EXTRACT the result ────────────────────────
+    .content()                       // → String (plain text)
+    // OR
+    .entity(CustomerRisk.class)      // → Java object (Hours 3-4)
+    // OR
+    .chatResponse()                  // → full response with metadata
+```
+
+---
+
+## Why the service methods are named `technique1_`, `technique2_` etc.
+
+Each method in `PromptEngineeringService` isolates one technique so you can see exactly what changes between them. In production code you'd combine techniques — but during learning, seeing them isolated makes the difference clear.
+
+Here's what changes between each method:
+
+zeroShot_summariseCustomer()
+→ no .system() call
+→ plain .user(bigString)
+→ just ask, no examples, no structure
+
+fewShot_classifyChurnRisk()
+→ .system() has example pairs (input → output)
+→ model learns format FROM the examples
+→ no format instruction needed explicitly
+
+chainOfThought_upsellAnalysis()
+→ .user() has "Step 1... Step 2... Step 3..."
+→ forces model to show reasoning
+→ more reliable for complex decisions
+
+promptTemplate_generateEmail()
+→ PromptTemplate with {variables}
+→ same prompt structure, different data each call
+→ reusable, testable
+
+roleAndConstraints_segmentCustomers()
+→ .system() has strict numbered rules
+→ "Return ONLY JSON" — no prose allowed
+→ model is constrained, not just guided
+
+contextInjection_answerQuestion()
+→ customer data injected directly into .user()
+→ "answer ONLY from data above"
+→ prevents hallucination for factual questions
+```
+
+---
+
+## The one mental model that ties it all together
+```
+┌─────────────────────────────────────────────────┐
+│  chatClient  =  an HTTP client                  │
+│                                                 │
+│  .system()   =  "Content-Type" equivalent       │
+│                  tells the API how to behave    │
+│                                                 │
+│  .user()     =  the request body                │
+│                  your actual question/task      │
+│                                                 │
+│  .call()     =  restTemplate.postForObject()    │
+│                  makes the network call         │
+│                                                 │
+│  .content()  =  response.getBody()              │
+│                  gives you the string result    │
+└─────────────────────────────────────────────────┘
+```
+![img_1.png](img_1.png)
