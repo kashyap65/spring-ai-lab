@@ -38,6 +38,8 @@ spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:your-key-here}   # reads from env var
+      connect-timeout: 10000
+      read-timeout: 120000
       chat:
         options:
           model: gpt-4o
